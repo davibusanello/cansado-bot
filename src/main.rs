@@ -1,20 +1,24 @@
+use dotenv;
 use std::env;
 
 mod twitch;
 
+struct AppConfig {
+    channel: String,
+    twitch_username: Option<String>,
+    twitch_token: Option<String>,
+}
 
 fn main() {
     let environment = current_environment();
 
-    let config = load_config();
-    let username = Some(config.1.as_ref().map_or("", String::as_str));
-    let oauth_token = Some(config.2.as_ref().map_or("", String::as_str));
+    let config = load_config(&environment);
+    let username = Some(config.twitch_username.as_ref().map_or("", String::as_str));
+    let oauth_token = Some(config.twitch_token.as_ref().map_or("", String::as_str));
     println!("Starting {:?} in '{}' environment!", username.to_owned(), environment);
     println!("-----------------------");
-    twitch::irc::init(&config.0, username, oauth_token);
 
-    // println!("My config: {:?}", config)
-
+    twitch::irc::init(&config.channel, username, oauth_token);
 }
 
 fn current_environment() -> String {
@@ -24,7 +28,9 @@ fn current_environment() -> String {
     }
 }
 
-fn load_config() -> (String, Option<String>, Option<String>) {
+fn load_config(environment: &String) -> AppConfig {
+    dotenv::from_filename(environment.to_owned() + ".env").ok();
+
     let channel = match env::var("TWITCH_IRC_CHANNEL") {
         Ok(val) => val,
         Err(_e) => String::from("test_channel"),
@@ -38,5 +44,9 @@ fn load_config() -> (String, Option<String>, Option<String>) {
         Err(_e) => None,
     };
 
-    (channel, username, token)
+    AppConfig {
+        channel: channel,
+        twitch_username: username,
+        twitch_token: token
+    }
 }
