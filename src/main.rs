@@ -1,7 +1,12 @@
 use dotenv;
 use std::env;
+use std::collections::VecDeque;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 mod twitch;
+mod types;
+use types::MessageReceived;
 
 struct AppConfig {
     channel: String,
@@ -11,12 +16,13 @@ struct AppConfig {
 
 fn main() {
     let environment = current_environment();
-
     let config = load_config(&environment);
     let username = Some(config.twitch_username.as_ref().map_or("", String::as_str));
     let oauth_token = Some(config.twitch_token.as_ref().map_or("", String::as_str));
     println!("Starting {:?} in '{}' environment!", username.to_owned(), environment);
     println!("-----------------------");
+
+    let mut received_messages_queue = init_queues();
 
     twitch::irc::init(&config.channel, username, oauth_token);
 }
@@ -49,4 +55,12 @@ fn load_config(environment: &String) -> AppConfig {
         twitch_username: username,
         twitch_token: token
     }
+}
+
+fn init_queues() -> Rc<RefCell<VecDeque<MessageReceived>>> {
+
+    let mut buffer: VecDeque<MessageReceived> = VecDeque::new();
+    let received_messages = Rc::new(RefCell::new(buffer));
+
+    return received_messages;
 }
