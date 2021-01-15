@@ -8,6 +8,7 @@ use std::thread;
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
 
+use twitch_irc::message::{ServerMessage};
 mod twitch;
 mod types;
 use types::MessageReceived;
@@ -21,7 +22,7 @@ struct AppConfig {
 }
 
 fn main() {
-    let (tx, rx): (Sender<i32>, Receiver<i32>) = mpsc::channel();
+    let (tx, rx): (Sender<ServerMessage>, Receiver<ServerMessage>) = mpsc::channel();
 
     let environment = current_environment();
     let config = load_config(&environment);
@@ -31,12 +32,20 @@ fn main() {
     println!("Starting {:?} in '{}' environment!", username.to_owned(), environment);
     println!("-----------------------");
 
+    // spawn the pool reader thread
+    let pool_thread = thread::spawn(move || {
+
+        loop {
+            println!("Pool: Received: {:?}", rx.recv().unwrap());
+        }
+    });
+
     // The sender endpoint can be copied
-    let thread_tx = tx.clone();
+    let irc_thread_tx = tx.clone();
 
     // spawn the irc module on other thread
     let irc_thread = thread::spawn(move || {
-        twitch::irc::init(used_channel, username, oauth_token);
+        twitch::irc::init(used_channel, username, oauth_token, irc_thread_tx);
     });
 
     let ten_millis = time::Duration::from_millis(10000);
@@ -50,7 +59,7 @@ fn main() {
     println!("The IRC bot is running in another thread...");
 
     irc_thread.join();
-
+    pool_thread.join();
 }
 
 fn current_environment() -> String {

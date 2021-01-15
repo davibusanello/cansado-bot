@@ -7,9 +7,10 @@ use twitch_irc::TwitchIRCClient;
 use twitch_irc::message::{ServerMessage};
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::sync::mpsc::{Sender};
 
 #[tokio::main]
-pub async fn init(channel: String, username: Option<String>, token: Option<String>) {
+pub async fn init(channel: String, username: Option<String>, token: Option<String>, channel_sender: Sender<ServerMessage>) {
     let mut log_file = OpenOptions::new().append(true).open("irc_logs.log").expect("Can't open logs file to write.");
 
     let config = get_auth_credentials(username, token);
@@ -20,7 +21,9 @@ pub async fn init(channel: String, username: Option<String>, token: Option<Strin
     // otherwise they will back up.
     let join_handle = tokio::spawn(async move {
         while let Some(message) = incoming_messages.next().await {
-            println!("Received message: {:?}", message);
+            let copy_message = message.clone();
+            // todo: remove after have a clear communication interface
+            // println!("IRC: Received message: {:?}", message);
 
             match message {
                 ServerMessage::Privmsg(private_message) => {
@@ -29,6 +32,9 @@ pub async fn init(channel: String, username: Option<String>, token: Option<Strin
                 },
                 _ => (),
             }
+
+            // send messages to main thread
+            channel_sender.send(copy_message).unwrap();
         }
     });
 
