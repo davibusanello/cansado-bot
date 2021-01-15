@@ -3,6 +3,10 @@ use std::env;
 use std::collections::VecDeque;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time;
+use std::thread;
+use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc;
 
 mod twitch;
 mod types;
@@ -17,6 +21,8 @@ struct AppConfig {
 }
 
 fn main() {
+    let (tx, rx): (Sender<i32>, Receiver<i32>) = mpsc::channel();
+
     let environment = current_environment();
     let config = load_config(&environment);
     let used_channel = config.channel.clone();
@@ -25,9 +31,26 @@ fn main() {
     println!("Starting {:?} in '{}' environment!", username.to_owned(), environment);
     println!("-----------------------");
 
+    // The sender endpoint can be copied
+    let thread_tx = tx.clone();
+
+    // spawn the irc module on other thread
+    let irc_thread = thread::spawn(move || {
+        twitch::irc::init(used_channel, username, oauth_token);
+    });
+
+    let ten_millis = time::Duration::from_millis(10000);
+    let now = time::Instant::now();
+    thread::sleep(ten_millis);
+
+
     let mut received_messages_queue = init_queues();
 
-    twitch::irc::init(&config.channel, username, oauth_token);
+    println!("--------------------");
+    println!("The IRC bot is running in another thread...");
+
+    irc_thread.join();
+
 }
 
 fn current_environment() -> String {
