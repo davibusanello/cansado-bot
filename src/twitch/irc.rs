@@ -9,7 +9,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 
 #[tokio::main]
-pub async fn init(channel: &str, username: Option<&str>, token: Option<&str>) {
+pub async fn init(channel: String, username: Option<String>, token: Option<String>) {
     let mut log_file = OpenOptions::new().append(true).open("irc_logs.log").expect("Can't open logs file to write.");
 
     let config = get_auth_credentials(username, token);
@@ -40,7 +40,7 @@ pub async fn init(channel: &str, username: Option<&str>, token: Option<&str>) {
     join_handle.await.unwrap();
 }
 
-fn get_auth_credentials(username: Option<&str>, token: Option<&str>) -> ClientConfig<StaticLoginCredentials> {
+fn get_auth_credentials(username: Option<String>, token: Option<String>) -> ClientConfig<StaticLoginCredentials> {
     if username.is_none() || token.is_none() {
         // default configuration is to join chat as anonymous.
         return ClientConfig::default();

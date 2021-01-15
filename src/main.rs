@@ -8,6 +8,8 @@ mod twitch;
 mod types;
 use types::MessageReceived;
 
+// Represents the app configuration
+#[derive(Debug)]
 struct AppConfig {
     channel: String,
     twitch_username: Option<String>,
@@ -17,8 +19,9 @@ struct AppConfig {
 fn main() {
     let environment = current_environment();
     let config = load_config(&environment);
-    let username = Some(config.twitch_username.as_ref().map_or("", String::as_str));
-    let oauth_token = Some(config.twitch_token.as_ref().map_or("", String::as_str));
+    let used_channel = config.channel.clone();
+    let username = config.twitch_username;
+    let oauth_token = config.twitch_token;
     println!("Starting {:?} in '{}' environment!", username.to_owned(), environment);
     println!("-----------------------");
 
