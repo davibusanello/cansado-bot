@@ -7,7 +7,7 @@ use twitch_irc::TwitchIRCClient;
 use twitch_irc::message::{ServerMessage};
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::sync::mpsc::{Sender};
+use crossbeam_channel::{Sender};
 
 #[tokio::main]
 pub async fn init(channel: String, username: Option<String>, token: Option<String>, channel_sender: Sender<ServerMessage>) {

@@ -5,8 +5,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time;
 use std::thread;
-use std::sync::mpsc::{Sender, Receiver};
-use std::sync::mpsc;
+
+use crossbeam_channel::unbounded;
+// use crossbeam_channel::{Sender, Receiver};
+use crossbeam_queue::SegQueue;
 
 use twitch_irc::message::{ServerMessage};
 mod twitch;
@@ -22,7 +24,9 @@ struct AppConfig {
 }
 
 fn main() {
-    let (tx, rx): (Sender<ServerMessage>, Receiver<ServerMessage>) = mpsc::channel();
+    let history_queue = SegQueue::<ServerMessage>::new();
+
+    let (tx, rx) = unbounded::<ServerMessage>();
 
     let environment = current_environment();
     let config = load_config(&environment);
@@ -32,13 +36,32 @@ fn main() {
     println!("Starting {:?} in '{}' environment!", username.to_owned(), environment);
     println!("-----------------------");
 
+    let pool_receiver = rx.clone();
     // spawn the pool reader thread
     let pool_thread = thread::spawn(move || {
 
         loop {
-            println!("Pool: Received: {:?}", rx.recv().unwrap());
+            match pool_receiver.recv() {
+                Ok(data) => {
+                    history_queue.push(data.clone());
+                    println!("Pool: Received: {:?}", data);
+
+                },
+                Err(err) => println!("Pool 1 Error on {:?}", err)
+            }
         }
     });
+
+    let pool_receiver2 = rx.clone();
+    let pool_thread2 = thread::spawn(move || {
+
+        loop {
+
+            println!("Pool2: Received: {:?}", pool_receiver2.recv().unwrap());
+        }
+    });
+
+
 
     // The sender endpoint can be copied
     let irc_thread_tx = tx.clone();
@@ -60,6 +83,7 @@ fn main() {
 
     irc_thread.join();
     pool_thread.join();
+    pool_thread2.join();
 }
 
 fn current_environment() -> String {

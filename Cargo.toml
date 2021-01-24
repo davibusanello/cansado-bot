@@ -14,3 +14,5 @@ tokio = { version = "0.3.4", features = ["rt-multi-thread"] }
 serde = "1.0.117"
 serde_yaml = "0.8.14"
 dotenv = "0.15"
+crossbeam-channel = "0.5"
+crossbeam-queue = "0.3"
