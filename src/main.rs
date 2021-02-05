@@ -13,7 +13,7 @@ use crossbeam_queue::SegQueue;
 use twitch_irc::message::{ServerMessage};
 mod twitch;
 mod types;
-use types::MessageReceived;
+use types::BroadcastMessage;
 
 // Represents the app configuration
 #[derive(Debug)]
@@ -116,9 +116,9 @@ fn load_config(environment: &String) -> AppConfig {
     }
 }
 
-fn init_queues() -> Rc<RefCell<VecDeque<MessageReceived>>> {
+fn init_queues() -> Rc<RefCell<VecDeque<BroadcastMessage>>> {
 
-    let mut buffer: VecDeque<MessageReceived> = VecDeque::new();
+    let mut buffer: VecDeque<BroadcastMessage> = VecDeque::new();
     let received_messages = Rc::new(RefCell::new(buffer));
 
     return received_messages;
