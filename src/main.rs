@@ -9,11 +9,12 @@ use std::thread;
 use crossbeam_channel::unbounded;
 // use crossbeam_channel::{Sender, Receiver};
 use crossbeam_queue::SegQueue;
-
 use twitch_irc::message::{ServerMessage};
-mod twitch;
-mod types;
-use types::BroadcastMessage;
+
+mod services;
+use services::twitch;
+mod common;
+use common::types::{BroadcastMessage};
 
 // Represents the app configuration
 #[derive(Debug)]

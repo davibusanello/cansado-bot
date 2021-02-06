@@ -1,5 +1,4 @@
 use twitch_irc::message::{ServerMessage};
-
 // Describe the current available services
 #[derive(Copy, Clone, Debug)]
 pub enum Services {

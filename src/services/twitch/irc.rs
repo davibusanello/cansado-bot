@@ -1,17 +1,22 @@
+use std::fs::OpenOptions;
+use std::io::Write;
+
 use futures::prelude::*;
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::ClientConfig;
 use twitch_irc::TCPTransport;
 use twitch_irc::TwitchIRCClient;
-
 use twitch_irc::message::{ServerMessage};
-use std::fs::OpenOptions;
-use std::io::Write;
 use crossbeam_channel::{Sender};
+
+use crate::common::helpers::{current_timestamp};
 
 #[tokio::main]
 pub async fn init(channel: String, username: Option<String>, token: Option<String>, channel_sender: Sender<ServerMessage>) {
-    let mut log_file = OpenOptions::new().append(true).open("irc_logs.log").expect("Can't open logs file to write.");
+    let file_name = format!("{}_{}_irc.log", current_timestamp(), channel);
+
+
+    let mut log_file = OpenOptions::new().create_new(true).append(true).open(file_name).expect("Can't open logs file to write.");
 
     let config = get_auth_credentials(username, token);
     let (mut incoming_messages, client) =
