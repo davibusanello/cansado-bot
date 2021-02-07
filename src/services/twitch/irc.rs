@@ -1,22 +1,30 @@
 use std::fs::OpenOptions;
 use std::io::Write;
 
+use crossbeam_channel::Sender;
 use futures::prelude::*;
 use twitch_irc::login::StaticLoginCredentials;
+use twitch_irc::message::ServerMessage;
 use twitch_irc::ClientConfig;
 use twitch_irc::TCPTransport;
 use twitch_irc::TwitchIRCClient;
-use twitch_irc::message::{ServerMessage};
-use crossbeam_channel::{Sender};
 
-use crate::common::helpers::{current_timestamp};
+use crate::common::helpers::current_timestamp;
 
 #[tokio::main]
-pub async fn init(channel: String, username: Option<String>, token: Option<String>, channel_sender: Sender<ServerMessage>) {
+pub async fn init(
+    channel: String,
+    username: Option<String>,
+    token: Option<String>,
+    channel_sender: Sender<ServerMessage>,
+) {
     let file_name = format!("{}_{}_irc.log", current_timestamp(), channel);
 
-
-    let mut log_file = OpenOptions::new().create_new(true).append(true).open(file_name).expect("Can't open logs file to write.");
+    let mut log_file = OpenOptions::new()
+        .create_new(true)
+        .append(true)
+        .open(file_name)
+        .expect("Can't open logs file to write.");
 
     let config = get_auth_credentials(username, token);
     let (mut incoming_messages, client) =
@@ -32,9 +40,14 @@ pub async fn init(channel: String, username: Option<String>, token: Option<Strin
 
             match message {
                 ServerMessage::Privmsg(private_message) => {
-                    let log = format!("{} {} {} \n", private_message.server_timestamp, private_message.sender.login, private_message.message_text);
+                    let log = format!(
+                        "{} {} {} \n",
+                        private_message.server_timestamp,
+                        private_message.sender.login,
+                        private_message.message_text
+                    );
                     log_file.write_all(log.as_bytes()).expect("Write failed.");
-                },
+                }
                 _ => (),
             }
 
@@ -51,12 +64,18 @@ pub async fn init(channel: String, username: Option<String>, token: Option<Strin
     join_handle.await.unwrap();
 }
 
-fn get_auth_credentials(username: Option<String>, token: Option<String>) -> ClientConfig<StaticLoginCredentials> {
+fn get_auth_credentials(
+    username: Option<String>,
+    token: Option<String>,
+) -> ClientConfig<StaticLoginCredentials> {
     if username.is_none() || token.is_none() {
         // default configuration is to join chat as anonymous.
         return ClientConfig::default();
     }
 
-    let custom_credentials = StaticLoginCredentials::new(username.unwrap().to_string(), Some(token.unwrap().to_string()));
+    let custom_credentials = StaticLoginCredentials::new(
+        username.unwrap().to_string(),
+        Some(token.unwrap().to_string()),
+    );
     ClientConfig::new_simple(custom_credentials)
 }

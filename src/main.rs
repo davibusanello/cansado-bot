@@ -1,20 +1,20 @@
 use dotenv;
-use std::env;
-use std::collections::VecDeque;
 use std::cell::RefCell;
+use std::collections::VecDeque;
+use std::env;
 use std::rc::Rc;
-use std::time;
 use std::thread;
+use std::time;
 
 use crossbeam_channel::unbounded;
 // use crossbeam_channel::{Sender, Receiver};
 use crossbeam_queue::SegQueue;
-use twitch_irc::message::{ServerMessage};
+use twitch_irc::message::ServerMessage;
 
 mod services;
 use services::twitch;
 mod common;
-use common::types::{BroadcastMessage};
+use common::types::BroadcastMessage;
 
 // Represents the app configuration
 #[derive(Debug)]
@@ -34,35 +34,29 @@ fn main() {
     let used_channel = config.channel.clone();
     let username = config.twitch_username;
     let oauth_token = config.twitch_token;
-    println!("Starting {:?} in '{}' environment!", username.to_owned(), environment);
+    println!(
+        "Starting {:?} in '{}' environment!",
+        username.to_owned(),
+        environment
+    );
     println!("-----------------------");
 
     let pool_receiver = rx.clone();
     // spawn the pool reader thread
-    let pool_thread = thread::spawn(move || {
-
-        loop {
-            match pool_receiver.recv() {
-                Ok(data) => {
-                    history_queue.push(data.clone());
-                    println!("Pool: Received: {:?}", data);
-
-                },
-                Err(err) => println!("Pool 1 Error on {:?}", err)
+    let pool_thread = thread::spawn(move || loop {
+        match pool_receiver.recv() {
+            Ok(data) => {
+                history_queue.push(data.clone());
+                println!("Pool: Received: {:?}", data);
             }
+            Err(err) => println!("Pool 1 Error on {:?}", err),
         }
     });
 
     let pool_receiver2 = rx.clone();
-    let pool_thread2 = thread::spawn(move || {
-
-        loop {
-
-            println!("Pool2: Received: {:?}", pool_receiver2.recv().unwrap());
-        }
+    let pool_thread2 = thread::spawn(move || loop {
+        println!("Pool2: Received: {:?}", pool_receiver2.recv().unwrap());
     });
-
-
 
     // The sender endpoint can be copied
     let irc_thread_tx = tx.clone();
@@ -73,11 +67,10 @@ fn main() {
     });
 
     let ten_millis = time::Duration::from_millis(10000);
-    let now = time::Instant::now();
+    let _now = time::Instant::now();
     thread::sleep(ten_millis);
 
-
-    let mut received_messages_queue = init_queues();
+    // let mut received_messages_queue = init_queues();
 
     println!("--------------------");
     println!("The IRC bot is running in another thread...");
@@ -113,14 +106,14 @@ fn load_config(environment: &String) -> AppConfig {
     AppConfig {
         channel: channel,
         twitch_username: username,
-        twitch_token: token
+        twitch_token: token,
     }
 }
 
-fn init_queues() -> Rc<RefCell<VecDeque<BroadcastMessage>>> {
+// fn init_queues() -> Rc<RefCell<VecDeque<BroadcastMessage>>> {
 
-    let mut buffer: VecDeque<BroadcastMessage> = VecDeque::new();
-    let received_messages = Rc::new(RefCell::new(buffer));
+//     let mut buffer: VecDeque<BroadcastMessage> = VecDeque::new();
+//     let received_messages = Rc::new(RefCell::new(buffer));
 
-    return received_messages;
-}
+//     return received_messages;
+// }
