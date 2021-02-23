@@ -2,3 +2,4 @@
 development.env
 development.yaml
 development.yml
+*.log
