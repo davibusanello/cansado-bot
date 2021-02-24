@@ -1,7 +1,7 @@
 use std::fs::OpenOptions;
 use std::io::Write;
 
-use crossbeam_channel::Sender;
+use crossbeam_channel::{unbounded, Sender};
 use futures::prelude::*;
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::message::ServerMessage;
@@ -10,13 +10,14 @@ use twitch_irc::TCPTransport;
 use twitch_irc::TwitchIRCClient;
 
 use crate::common::helpers::current_timestamp;
+use crate::common::types::{BroadcastMessage, Services, MessageContent, ServiceSender};
 
 #[tokio::main]
 pub async fn init(
     channel: String,
     username: Option<String>,
     token: Option<String>,
-    channel_sender: Sender<ServerMessage>,
+    broadcast_sender: Sender<BroadcastMessage>,
 ) {
     let file_name = format!("{}_{}_irc.log", current_timestamp(), channel);
 
@@ -26,18 +27,20 @@ pub async fn init(
         .open(file_name)
         .expect("Can't open logs file to write.");
 
+    let (irc_sender, irc_receiver) = unbounded::<BroadcastMessage>();
+    let send_sender = broadcast_sender.clone();
+
+    send_sender.send(add_service(irc_sender.clone())).unwrap();
+
     let config = get_auth_credentials(username, token);
     let (mut incoming_messages, client) =
         TwitchIRCClient::<TCPTransport, StaticLoginCredentials>::new(config);
 
     // first thing you should do: start consuming incoming messages,
     // otherwise they will back up.
-    let join_handle = tokio::spawn(async move {
+    let irc_thread_handle = tokio::spawn(async move {
         while let Some(message) = incoming_messages.next().await {
             let copy_message = message.clone();
-            // todo: remove after have a clear communication interface
-            // println!("IRC: Received message: {:?}", message);
-
             match message {
                 ServerMessage::Privmsg(private_message) => {
                     let log = format!(
@@ -51,17 +54,52 @@ pub async fn init(
                 _ => (),
             }
 
-            // send messages to main thread
-            channel_sender.send(copy_message).unwrap();
+            let message = build_broadcast_message(copy_message, None).clone();
+
+            // send messages to broadcaster
+            broadcast_sender.send(message).unwrap();
         }
     });
+
+    let irc_sender_thread = tokio::spawn(async move {
+        loop {
+            match irc_receiver.recv() {
+                Ok(data) => println!("IRC sending.. {:?} \n", data),
+                _ => (),
+            }
+        }
+    });
+
+
 
     // join a channel
     client.join(channel.to_owned());
 
     // keep the tokio executor alive.
     // If you return instead of waiting the background task will exit.
-    join_handle.await.unwrap();
+    irc_thread_handle.await.unwrap();
+    irc_sender_thread.await.unwrap();
+}
+
+fn build_broadcast_message(message: ServerMessage, to: Option<Services>) -> BroadcastMessage {
+    BroadcastMessage {
+        timestamp: current_timestamp(),
+        sender: Services::Irc,
+        raw_message: MessageContent::ServerMessage(message),
+        to: to
+    }
+}
+
+fn add_service(sender: Sender<BroadcastMessage>) -> BroadcastMessage {
+    BroadcastMessage {
+        timestamp: current_timestamp(),
+        sender: Services::Irc,
+        raw_message: MessageContent::AddService(ServiceSender {
+            service: Services::Irc,
+            sender: sender
+        }),
+        to: Some(Services::Broadcaster)
+    }
 }
 
 fn get_auth_credentials(

@@ -3,7 +3,7 @@ use crossbeam_channel::Sender;
 use twitch_irc::message::ServerMessage;
 
 // Describe the current available services
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Services {
     Irc,
     Command,
@@ -12,21 +12,27 @@ pub enum Services {
 
 #[derive(Clone, Debug)]
 pub struct BroadcastMessage {
-    timestamp: u64,
-    sender: Services,
-    raw_message: MessageContent,
-    to: Option<Services>,
+    pub timestamp: u64,
+    pub sender: Services,
+    pub raw_message: MessageContent,
+    pub to: Option<Services>,
 }
 
 // Describes the broadcast message content options
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum MessageContent {
-    String,
-    ServerMessage,
-    AddService,
+    String(String),
+    ServerMessage(ServerMessage),
+    AddService(ServiceSender),
 }
 
-/// Describes the Message to load a new service in the broadcaster
-pub struct AddService<T> {
-    sender: Sender<T>,
+#[derive(Clone, Debug)]
+pub struct ServiceSender {
+    pub service: Services,
+    pub sender: Sender<BroadcastMessage>
 }
+
+pub struct Irc;
+pub struct Command;
+pub struct Broadcaster;
+
