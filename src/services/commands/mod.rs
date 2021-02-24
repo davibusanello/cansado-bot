@@ -1,6 +1,6 @@
 use std::thread;
 use crossbeam_channel::{unbounded, Sender};
-use twitch_irc::message::{ServerMessage};
+use twitch_irc::message::{ServerMessage, PrivmsgMessage};
 
 use crate::common::helpers::current_timestamp;
 use crate::common::types::{BroadcastMessage, Services, MessageContent, ServiceSender};
@@ -21,8 +21,10 @@ pub fn init_commands(broadcast_sender: Sender<BroadcastMessage>) -> thread::Join
                                 let first_char = prv_message.message_text.chars().nth(0).unwrap();
                                 if first_char == '!' {
                                     println!("Is a command");
-                                    let command = prv_message.message_text.split(' ');
-                                    println!("Command: {:?}", command);
+                                    let mut string_parts = prv_message.message_text.split_whitespace();
+                                    let command = string_parts.next();
+                                    println!("Command: {:?}", command.clone());
+                                    if command == Some("!first") { first(prv_message, broadcast_sender.clone()) }
                                 }
                             },
                             _ => (),
@@ -50,4 +52,14 @@ fn add_service(sender: Sender<BroadcastMessage>) -> BroadcastMessage {
     }
 }
 
-fn first() {}
+fn first(raw_irc_message: PrivmsgMessage, broadcast_sender: Sender<BroadcastMessage>) {
+    thread::spawn(move || {
+        let message = format!("Valeu por chegar aqui cedo @{}", raw_irc_message.sender.login);
+        broadcast_sender.send(BroadcastMessage {
+            timestamp: current_timestamp(),
+            sender: Services::Command,
+            raw_message: MessageContent::String(message),
+            to: Some(Services::Irc)
+        }).unwrap()
+    });
+}

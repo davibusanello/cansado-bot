@@ -61,10 +61,18 @@ pub async fn init(
         }
     });
 
+    let handler_client = client.clone();
+    let handler_channel = channel.clone();
     let irc_sender_thread = tokio::spawn(async move {
         loop {
             match irc_receiver.recv() {
-                Ok(data) => println!("IRC sending.. {:?} \n", data),
+                Ok(data) => {
+                    println!("IRC sending.. {:?} \n", data.clone());
+                    match data.raw_message {
+                        MessageContent::String(message) => handler_client.say(handler_channel.clone(), message).await.unwrap(),
+                        _ => (),
+                    }
+                },
                 _ => (),
             }
         }
