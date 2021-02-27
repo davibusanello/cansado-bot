@@ -1,6 +1,7 @@
 use crossbeam_channel::Sender;
 #[warn(unused_imports)]
 use twitch_irc::message::ServerMessage;
+pub use crate::state::{BotState, CommandsState};
 
 // Describe the current available services
 #[derive(Copy, Clone, Debug, PartialEq)]

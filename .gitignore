@@ -3,3 +3,4 @@ development.env
 development.yaml
 development.yml
 *.log
+src/state.json
