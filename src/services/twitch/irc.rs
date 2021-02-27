@@ -10,7 +10,7 @@ use twitch_irc::TCPTransport;
 use twitch_irc::TwitchIRCClient;
 
 use crate::common::helpers::current_timestamp;
-use crate::common::types::{BroadcastMessage, Services, MessageContent, ServiceSender};
+use crate::common::types::{BroadcastMessage, MessageContent, ServiceSender, Services};
 
 #[tokio::main]
 pub async fn init(
@@ -69,16 +69,17 @@ pub async fn init(
                 Ok(data) => {
                     println!("IRC sending.. {:?} \n", data.clone());
                     match data.raw_message {
-                        MessageContent::String(message) => handler_client.say(handler_channel.clone(), message).await.unwrap(),
+                        MessageContent::String(message) => handler_client
+                            .say(handler_channel.clone(), message)
+                            .await
+                            .unwrap(),
                         _ => (),
                     }
-                },
+                }
                 _ => (),
             }
         }
     });
-
-
 
     // join a channel
     client.join(channel.to_owned());
@@ -94,7 +95,7 @@ fn build_broadcast_message(message: ServerMessage, to: Option<Services>) -> Broa
         timestamp: current_timestamp(),
         sender: Services::Irc,
         raw_message: MessageContent::ServerMessage(message),
-        to: to
+        to: to,
     }
 }
 
@@ -104,9 +105,9 @@ fn add_service(sender: Sender<BroadcastMessage>) -> BroadcastMessage {
         sender: Services::Irc,
         raw_message: MessageContent::AddService(ServiceSender {
             service: Services::Irc,
-            sender: sender
+            sender: sender,
         }),
-        to: Some(Services::Broadcaster)
+        to: Some(Services::Broadcaster),
     }
 }
 

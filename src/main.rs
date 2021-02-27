@@ -4,10 +4,10 @@ use std::thread;
 use std::time;
 // Internals
 mod services;
-use services::twitch;
 use services::commands;
-mod common;
+use services::twitch;
 mod broadcast;
+mod common;
 mod state;
 
 // Represents the app configuration

@@ -1,40 +1,43 @@
-use std::thread;
-use std::{sync::{Arc, Mutex}};
 use crossbeam_channel::{unbounded, Sender};
-use twitch_irc::message::{ServerMessage, PrivmsgMessage};
+use std::sync::{Arc, Mutex};
+use std::thread;
+use twitch_irc::message::{PrivmsgMessage, ServerMessage};
 
 use crate::common::helpers::current_timestamp;
-use crate::common::types::{BroadcastMessage, Services, MessageContent, ServiceSender, BotState};
+use crate::common::types::{BotState, BroadcastMessage, MessageContent, ServiceSender, Services};
 
-pub fn init_commands(broadcast_sender: Sender<BroadcastMessage>, state: Arc<Mutex<BotState>>) -> thread::JoinHandle<()> {
+pub fn init_commands(
+    broadcast_sender: Sender<BroadcastMessage>,
+    state: Arc<Mutex<BotState>>,
+) -> thread::JoinHandle<()> {
     let (commands_sender, commands_receiver) = unbounded::<BroadcastMessage>();
     let send_sender = broadcast_sender.clone();
-    send_sender.send(add_service(commands_sender.clone())).unwrap();
+    send_sender
+        .send(add_service(commands_sender.clone()))
+        .unwrap();
 
     let broadcaster_receiver_thread = thread::spawn(move || loop {
         match commands_receiver.recv() {
             Ok(data) => {
                 let raw_message = data.raw_message.clone();
                 match raw_message {
-                    MessageContent::ServerMessage(server_message) => {
-                        match server_message {
-                            ServerMessage::Privmsg(prv_message) => {
-                                let first_char = prv_message.message_text.chars().nth(0).unwrap();
-                                if first_char == '!' {
-                                    let mut string_parts = prv_message.message_text.split_whitespace();
-                                    let command = string_parts.next();
-                                    println!("Command: {:?}", command.clone());
-                                    if command == Some("!first") {
-                                        first(prv_message, broadcast_sender.clone(), state.clone());
-                                    }
+                    MessageContent::ServerMessage(server_message) => match server_message {
+                        ServerMessage::Privmsg(prv_message) => {
+                            let first_char = prv_message.message_text.chars().nth(0).unwrap();
+                            if first_char == '!' {
+                                let mut string_parts = prv_message.message_text.split_whitespace();
+                                let command = string_parts.next();
+                                println!("Command: {:?}", command.clone());
+                                if command == Some("!first") {
+                                    first(prv_message, broadcast_sender.clone(), state.clone());
                                 }
-                            },
-                            _ => (),
+                            }
                         }
+                        _ => (),
                     },
                     _ => (),
                 }
-            },
+            }
             _ => (),
         }
     });
@@ -48,32 +51,47 @@ fn add_service(sender: Sender<BroadcastMessage>) -> BroadcastMessage {
         sender: Services::Command,
         raw_message: MessageContent::AddService(ServiceSender {
             service: Services::Command,
-            sender: sender
+            sender: sender,
         }),
-        to: Some(Services::Broadcaster)
+        to: Some(Services::Broadcaster),
     }
 }
 
-fn first(raw_irc_message: PrivmsgMessage, broadcast_sender: Sender<BroadcastMessage>, state: Arc<Mutex<BotState>>) {
+fn first(
+    raw_irc_message: PrivmsgMessage,
+    broadcast_sender: Sender<BroadcastMessage>,
+    state: Arc<Mutex<BotState>>,
+) {
     thread::spawn(move || {
         let command_sender = raw_irc_message.sender.login;
         let mut mutable_state = state.lock().unwrap();
-        let login = mutable_state.commands.first_list.iter().find(|login| login == &&command_sender);
+        let login = mutable_state
+            .commands
+            .first_list
+            .iter()
+            .find(|login| login == &&command_sender);
 
-        if login.is_some() { return }
+        if login.is_some() {
+            return;
+        }
 
-        let mut message = format!("Foi por pouco @{}, mas você foi o nº {} a chegar PogChamp", command_sender, mutable_state.commands.first_list.len() + 1);
+        let mut message = format!(
+            "Foi por pouco @{}, mas você foi o nº {} a chegar PogChamp",
+            command_sender,
+            mutable_state.commands.first_list.len() + 1
+        );
         if mutable_state.commands.first_list.is_empty() {
             message = format!("Valeu por chegar aqui cedo @{}", command_sender);
         }
-        broadcast_sender.send(BroadcastMessage {
-            timestamp: current_timestamp(),
-            sender: Services::Command,
-            raw_message: MessageContent::String(message),
-            to: Some(Services::Irc)
-        }).unwrap();
+        broadcast_sender
+            .send(BroadcastMessage {
+                timestamp: current_timestamp(),
+                sender: Services::Command,
+                raw_message: MessageContent::String(message),
+                to: Some(Services::Irc),
+            })
+            .unwrap();
 
         mutable_state.add_visitor(command_sender);
     });
-
 }
