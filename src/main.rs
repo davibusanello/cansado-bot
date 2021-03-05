@@ -4,10 +4,11 @@ use std::thread;
 use std::time;
 // Internals
 mod services;
-use services::twitch;
 use services::commands;
-mod common;
+use services::twitch;
 mod broadcast;
+mod common;
+mod state;
 
 // Represents the app configuration
 #[derive(Debug)]
@@ -23,6 +24,8 @@ fn main() {
     let used_channel = config.channel.clone();
     let username = config.twitch_username;
     let oauth_token = config.twitch_token;
+
+    let mut state = state::init_state().unwrap();
     let mut thread_list: Vec<thread::JoinHandle<()>> = Vec::new();
     println!(
         "Starting {:?} in '{}' environment!",
@@ -48,7 +51,7 @@ fn main() {
     });
 
     let commands_broadcast_sender = broadcaster_sender.clone();
-    let commands_thread = commands::init_commands(commands_broadcast_sender);
+    let commands_thread = commands::init_commands(commands_broadcast_sender, state);
 
     println!("--------------------");
 

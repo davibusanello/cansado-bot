@@ -1,3 +1,4 @@
+pub use crate::state::{BotState, CommandsState};
 use crossbeam_channel::Sender;
 #[warn(unused_imports)]
 use twitch_irc::message::ServerMessage;
@@ -29,10 +30,9 @@ pub enum MessageContent {
 #[derive(Clone, Debug)]
 pub struct ServiceSender {
     pub service: Services,
-    pub sender: Sender<BroadcastMessage>
+    pub sender: Sender<BroadcastMessage>,
 }
 
 pub struct Irc;
 pub struct Command;
 pub struct Broadcaster;
-

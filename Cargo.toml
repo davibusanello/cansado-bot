@@ -11,8 +11,9 @@ rust = "1.48"
 futures = "0.3.8"
 twitch-irc = "0.3.0"
 tokio = { version = "0.3.4", features = ["rt-multi-thread"] }
-serde = "1.0.117"
+serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8.14"
+serde_json = "1.0"
 dotenv = "0.15"
 crossbeam-channel = "0.5"
 crossbeam-queue = "0.3"

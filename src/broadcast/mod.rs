@@ -1,7 +1,7 @@
-use crate::common::types::{BroadcastMessage, Services, MessageContent, ServiceSender};
+use crate::common::types::{BroadcastMessage, MessageContent, ServiceSender, Services};
 use crossbeam_channel::{unbounded, Sender};
 use crossbeam_queue::SegQueue;
-use std::{sync::{Arc, Mutex}};
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 pub fn init_broadcaster() -> (thread::JoinHandle<()>, Sender<BroadcastMessage>) {
@@ -24,7 +24,7 @@ pub fn init_broadcaster() -> (thread::JoinHandle<()>, Sender<BroadcastMessage>) 
                         let mut services = receiver_service_list.lock().unwrap();
                         println!("service {:?} added", sender_data.service);
                         services.push(sender_data.clone());
-                    },
+                    }
                     _ => {
                         queue_data.push(data.clone());
                         let services = receiver_service_list.lock().unwrap();
@@ -44,8 +44,5 @@ pub fn init_broadcaster() -> (thread::JoinHandle<()>, Sender<BroadcastMessage>) 
         }
     });
 
-    return (
-        broadcaster_receiver_thread,
-        broadcast_sender.clone(),
-    )
+    return (broadcaster_receiver_thread, broadcast_sender.clone());
 }
