@@ -24,7 +24,7 @@ pub fn init_broadcaster() -> (thread::JoinHandle<()>, Sender<BroadcastMessage>) 
                         let mut services = receiver_service_list.lock().unwrap();
                         println!("service {:?} added", sender_data.service);
                         services.push(sender_data.clone());
-                    }
+                    },
                     _ => {
                         queue_data.push(data.clone());
                         let services = receiver_service_list.lock().unwrap();
