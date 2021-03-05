@@ -3,14 +3,14 @@ name = "cansado-bot"
 version = "0.1.0"
 authors = ["Davi Busanello <itsme@davibusanello.net>"]
 edition = "2018"
-rust = "1.48"
+rust = "1.49"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 futures = "0.3.8"
-twitch-irc = "0.3.0"
-tokio = { version = "0.3.4", features = ["rt-multi-thread"] }
+twitch-irc = "2.2"
+tokio = { version = "1.2", features = ["rt-multi-thread", "macros"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8.14"
 serde_json = "1.0"

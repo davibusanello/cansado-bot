@@ -39,7 +39,7 @@ pub async fn init(
     // first thing you should do: start consuming incoming messages,
     // otherwise they will back up.
     let irc_thread_handle = tokio::spawn(async move {
-        while let Some(message) = incoming_messages.next().await {
+        while let Some(message) = incoming_messages.recv().await {
             let copy_message = message.clone();
             match message {
                 ServerMessage::Privmsg(private_message) => {
