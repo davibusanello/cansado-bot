@@ -28,8 +28,14 @@ pub fn init_commands(
                                 let mut string_parts = prv_message.message_text.split_whitespace();
                                 let command = string_parts.next();
                                 println!("Command: {:?}", command.clone());
-                                if command == Some("!first") {
-                                    first(prv_message, broadcast_sender.clone(), state.clone());
+                                match command {
+                                    Some("!first") => {
+                                        first(prv_message, broadcast_sender.clone(), state.clone())
+                                    }
+                                    Some("!frist") | Some("!fritz")=> {
+                                        frist(prv_message, broadcast_sender.clone(), state.clone())
+                                    }
+                                    _ => (),
                                 }
                             }
                         }
@@ -55,6 +61,44 @@ fn add_service(sender: Sender<BroadcastMessage>) -> BroadcastMessage {
         }),
         to: Some(Services::Broadcaster),
     }
+}
+
+fn frist(
+    raw_irc_message: PrivmsgMessage,
+    broadcast_sender: Sender<BroadcastMessage>,
+    state: Arc<Mutex<BotState>>,
+) {
+    thread::spawn(move || {
+        let command_sender = raw_irc_message.sender.login;
+        let mutable_state = state.lock().unwrap();
+        let login = mutable_state
+            .commands
+            .first_list
+            .iter()
+            .find(|login| login == &&command_sender);
+
+        let compliment = "Cumprimentos aos Sr. @freakyfog e Sr. @pokemaobr.";
+
+        let message: String;
+        if login.is_some() {
+            message = format!("Eita, mas acho que tu ja a @{} fez certo", command_sender);
+        } else {
+            message = format!(
+                "Foi por pouco @{}, acho que voce queria dizer 'first' BloodTrail",
+                command_sender
+            );
+        }
+        broadcast_sender
+            .send(BroadcastMessage {
+                timestamp: current_timestamp(),
+                sender: Services::Command,
+                raw_message: MessageContent::String(
+                    format!("{} {}", message, compliment)
+                ),
+                to: Some(Services::Irc),
+            })
+            .unwrap();
+    });
 }
 
 fn first(
