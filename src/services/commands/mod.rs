@@ -2,6 +2,8 @@ use crossbeam_channel::{unbounded, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use twitch_irc::message::{PrivmsgMessage, ServerMessage};
+use std::time;
+use rand::{thread_rng, Rng};
 
 use crate::common::helpers::current_timestamp;
 use crate::common::types::{BotState, BroadcastMessage, MessageContent, ServiceSender, Services};
@@ -34,6 +36,9 @@ pub fn init_commands(
                                     }
                                     Some("!frist") | Some("!fritz")=> {
                                         frist(prv_message, broadcast_sender.clone(), state.clone())
+                                    },
+                                    Some("!cansado") => {
+                                        cansado(prv_message, broadcast_sender.clone(), state.clone())
                                     }
                                     _ => (),
                                 }
@@ -137,5 +142,31 @@ fn first(
             .unwrap();
 
         mutable_state.add_visitor(command_sender);
+    });
+}
+
+fn cansado(
+    raw_irc_message: PrivmsgMessage,
+    broadcast_sender: Sender<BroadcastMessage>,
+    _: Arc<Mutex<BotState>>,
+) {
+    thread::spawn(move || {
+        let command_sender = raw_irc_message.sender.login;
+
+        let message = format!("@{} cansado? Cansado sou eu Kappa. Mesmo assim desculpe a demora 👋", command_sender);
+        let mut rng = thread_rng();
+        let random_delay:u64 = rng.gen_range(5..= 101);
+
+        let tired_delay = time::Duration::from_secs(random_delay);
+        thread::sleep(tired_delay);
+
+        broadcast_sender
+            .send(BroadcastMessage {
+                timestamp: current_timestamp(),
+                sender: Services::Command,
+                raw_message: MessageContent::String(message),
+                to: Some(Services::Irc),
+            })
+            .unwrap();
     });
 }
