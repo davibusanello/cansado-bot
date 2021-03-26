@@ -58,6 +58,7 @@ dependencies = [
  "crossbeam-queue",
  "dotenv",
  "futures",
+ "rand",
  "serde",
  "serde_json",
  "serde_yaml",
