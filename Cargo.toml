@@ -10,7 +10,7 @@ rust = "1.49"
 [dependencies]
 futures = "0.3.8"
 twitch-irc = "2.2"
-tokio = { version = "1.2", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1.8", features = ["rt-multi-thread", "macros"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8.14"
 serde_json = "1.0"
